@@ -57,66 +57,63 @@ function hasFont(name) {
 }
 
 async function apiFonts() {
-  // Try the modern Local Font Access API (window.queryLocalFonts)
-  if (typeof window.queryLocalFonts === 'function') {
-    try {
-      // This call may prompt the user for permission in supporting browsers.
-      const fontDataList = await window.queryLocalFonts();
-      const set = new Set();
-      for (const f of fontDataList) {
-        const n = f.fullName || f.postscriptName || f.family;
-        if (n) set.add(n);
-      }
-      const arr = [...set].sort((a, b) => a.localeCompare(b));
-      if (arr.length) return arr;
-    } catch (err) {
-      console.warn('queryLocalFonts() failed:', err);
-      // fall through to other attempts/fallback
-    }
-  }
-
-  // Some experimental implementations exposed via navigator.fonts.query()
+  // Follow the Google sample pattern: request permission, call queryLocalFonts(),
+  // and inject @font-face rules so full font/variation names can be used.
+  if (typeof queryLocalFonts !== 'function') return null;
   try {
-    if (navigator.fonts && typeof navigator.fonts.query === 'function') {
-      const q = await navigator.fonts.query();
-      const set = new Set();
-      // q might be an async iterable in some polyfills/experiments
-      if (q && Symbol.asyncIterator in Object(q)) {
-        for await (const f of q) {
-          const n = f.fullName || f.postscriptName || f.family;
-          if (n) set.add(n);
-        }
-      } else if (q && (Array.isArray(q) || Symbol.iterator in Object(q))) {
-        for (const f of q) {
-          const n = f.fullName || f.postscriptName || f.family;
-          if (n) set.add(n);
-        }
+    // Try requesting permission explicitly where supported.
+    if (navigator.permissions && typeof navigator.permissions.request === 'function') {
+      try {
+        const r = await navigator.permissions.request({ name: 'local-fonts' });
+        if (r && r.state === 'denied') return null;
+      } catch (err) {
+        // Some browsers throw TypeError if the permission name isn't implemented — allow to proceed
+        if (err && err.name !== 'TypeError') throw err;
       }
-      const arr = [...set].sort((a, b) => a.localeCompare(b));
-      if (arr.length) return arr;
     }
-  } catch (err) {
-    console.warn('navigator.fonts.query() failed:', err);
-  }
 
-  // As a last API attempt, try the old/undocumented navigator.queryLocalFonts
-  try {
-    if (typeof navigator.queryLocalFonts === 'function') {
-      const q = await navigator.queryLocalFonts();
-      const set = new Set();
-      for (const f of q) {
-        const n = f.fullName || f.postscriptName || f.family;
-        if (n) set.add(n);
+    const picked = await queryLocalFonts();
+    if (!picked || !picked.length) return null;
+
+    // Build stylesheet rules exposing full/postscript names via local() so we can use them in font-family
+    const rules = [];
+    for (const meta of picked) {
+      const full = meta.fullName;
+      const post = meta.postscriptName;
+      if (full) {
+        const src = post ? `local('${full}'), local('${post}')` : `local('${full}')`;
+        rules.push(`@font-face{font-family:'${full}';src:${src};}`);
       }
-      const arr = [...set].sort((a, b) => a.localeCompare(b));
-      if (arr.length) return arr;
     }
-  } catch (err) {
-    console.warn('navigator.queryLocalFonts() failed:', err);
-  }
 
-  // No working API detected or permission denied/empty result
-  return null;
+    if (rules.length) {
+      try {
+        // Prefer Constructable Stylesheets when available
+        if (typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CSSStyleSheet.prototype) {
+          const ss = new CSSStyleSheet();
+          ss.replaceSync(rules.join('\n'));
+          document.adoptedStyleSheets = [...document.adoptedStyleSheets, ss];
+        } else {
+          const style = document.createElement('style');
+          style.textContent = rules.join('\n');
+          document.head.appendChild(style);
+        }
+      } catch (err) {
+        // non-fatal
+        console.warn('Failed to inject font-face rules:', err);
+      }
+    }
+
+    const set = new Set();
+    for (const meta of picked) {
+      const n = meta.fullName || meta.postscriptName || meta.family;
+      if (n) set.add(n);
+    }
+    return [...set].sort((a, b) => a.localeCompare(b));
+  } catch (err) {
+    console.warn('Local font access failed:', err);
+    return null;
+  }
 }
 
 function hashCandidates(list) {
