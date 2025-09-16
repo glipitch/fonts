@@ -57,22 +57,65 @@ function hasFont(name) {
 }
 
 async function apiFonts() {
-  if ('queryLocalFonts' in window) {
+  // Try the modern Local Font Access API (window.queryLocalFonts)
+  if (typeof window.queryLocalFonts === 'function') {
     try {
-      const status = await navigator.permissions.query({ name: 'local-fonts' });
-      if (status.state === 'granted') {
-        const fonts = await window.queryLocalFonts();
-        const set = new Set();
-        for (const f of fonts) {
+      // This call may prompt the user for permission in supporting browsers.
+      const fontDataList = await window.queryLocalFonts();
+      const set = new Set();
+      for (const f of fontDataList) {
+        const n = f.fullName || f.postscriptName || f.family;
+        if (n) set.add(n);
+      }
+      const arr = [...set].sort((a, b) => a.localeCompare(b));
+      if (arr.length) return arr;
+    } catch (err) {
+      console.warn('queryLocalFonts() failed:', err);
+      // fall through to other attempts/fallback
+    }
+  }
+
+  // Some experimental implementations exposed via navigator.fonts.query()
+  try {
+    if (navigator.fonts && typeof navigator.fonts.query === 'function') {
+      const q = await navigator.fonts.query();
+      const set = new Set();
+      // q might be an async iterable in some polyfills/experiments
+      if (q && Symbol.asyncIterator in Object(q)) {
+        for await (const f of q) {
           const n = f.fullName || f.postscriptName || f.family;
           if (n) set.add(n);
         }
-        return [...set].sort((a, b) => a.localeCompare(b));
+      } else if (q && (Array.isArray(q) || Symbol.iterator in Object(q))) {
+        for (const f of q) {
+          const n = f.fullName || f.postscriptName || f.family;
+          if (n) set.add(n);
+        }
       }
-    } catch (err) {
-      console.warn('Local Font Access API failed:', err);
+      const arr = [...set].sort((a, b) => a.localeCompare(b));
+      if (arr.length) return arr;
     }
+  } catch (err) {
+    console.warn('navigator.fonts.query() failed:', err);
   }
+
+  // As a last API attempt, try the old/undocumented navigator.queryLocalFonts
+  try {
+    if (typeof navigator.queryLocalFonts === 'function') {
+      const q = await navigator.queryLocalFonts();
+      const set = new Set();
+      for (const f of q) {
+        const n = f.fullName || f.postscriptName || f.family;
+        if (n) set.add(n);
+      }
+      const arr = [...set].sort((a, b) => a.localeCompare(b));
+      if (arr.length) return arr;
+    }
+  } catch (err) {
+    console.warn('navigator.queryLocalFonts() failed:', err);
+  }
+
+  // No working API detected or permission denied/empty result
   return null;
 }
 
@@ -81,47 +124,6 @@ function hashCandidates(list) {
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
   return (h >>> 0).toString(36);
 }
-
-function loadCache(hash) {
-  try {
-    const raw = localStorage.getItem(`${CACHE_KEY_PREFIX}:${hash}:${navigator.userAgent}`);
-    if (!raw) return null;
-    const obj = JSON.parse(raw);
-    if (Date.now() - obj.time > 7 * 24 * 60 * 60 * 1000) return null;
-    return obj.fonts || null;
-  } catch { return null; }
-}
-
-function saveCache(hash, fonts) {
-  try { localStorage.setItem(`${CACHE_KEY_PREFIX}:${hash}:${navigator.userAgent}`, JSON.stringify({ time: Date.now(), fonts })); } catch { }
-}
-
-async function heuristicFonts() {
-  if (webFontFaces.length) {
-    const style = document.createElement('style');
-    style.textContent = webFontFaces.join('\n');
-    document.head.appendChild(style);
-    await new Promise(r => setTimeout(r, 30));
-  }
-  const uniq = [...new Set(candidateFonts)];
-  const hash = hashCandidates(uniq);
-  const cached = loadCache(hash);
-  if (cached && cached.length) return cached;
-  initBaseline();
-  const found = [];
-  for (const n of uniq) { try { if (hasFont(n)) found.push(n); } catch { } }
-  found.sort((a, b) => a.localeCompare(b));
-  saveCache(hash, found);
-  return found;
-}
-
-function fallback(name) {
-  const n = name.toLowerCase();
-  if (/mono|code/.test(n)) return 'monospace';
-  if (/serif|times|georgia|garamond/.test(n)) return 'serif';
-  return 'sans-serif';
-}
-
 function render() {
   const filter = (flt.value || '').toLowerCase();
   out.innerHTML = '';
