@@ -1,16 +1,12 @@
 const sampleInput = document.getElementById('sample-input');
 const sizeInput = document.getElementById('sample-size');
 const weightSelect = document.getElementById('sample-weight');
-// Shared user-facing message used in multiple places below
+const $ = (id) => document.getElementById(id);
 const NOT_AVAILABLE_MSG = 'The Font Access API (queryLocalFonts) is not available in your browser.';
 if (sampleInput) {
   const setPreviewText = (text) => {
-    const gallery = document.getElementById('font-gallery');
-    if (gallery) {
-      if (window.__localFontsCache) {
-        renderFontGallery(window.__localFontsCache, text);
-      }
-    }
+    const gallery = $('font-gallery');
+    if (gallery && window.__localFontsCache) renderFontGallery(window.__localFontsCache, text);
   };
 
   setPreviewText(sampleInput.value || sampleInput.placeholder || '');
@@ -19,21 +15,18 @@ if (sampleInput) {
     setPreviewText(e.target.value);
   });
   const updateFromControls = () => {
-    if (window.__localFontsCache) {
-      renderFontGallery(window.__localFontsCache, sampleInput.value || '');
-    }
+    if (window.__localFontsCache) renderFontGallery(window.__localFontsCache, sampleInput.value || '');
   };
   sizeInput?.addEventListener('input', updateFromControls);
   weightSelect?.addEventListener('change', updateFromControls);
 }
 
-// Render a simple gallery of fonts: family name and the sample text in that font.
 function renderFontGallery(fonts, sampleText) {
-  const gallery = document.getElementById('font-gallery');
+  const gallery = $('font-gallery');
   if (!gallery) return;
   gallery.innerHTML = '';
-  const size = parseInt(document.getElementById('sample-size')?.value || '24', 10);
-  const weight = document.getElementById('sample-weight')?.value || '400';
+  const size = parseInt(sizeInput?.value || '24', 10);
+  const weight = weightSelect?.value || '400';
   fonts.forEach((metadata) => {
     const container = document.createElement('div');
     container.className = 'font-sample';
@@ -52,7 +45,6 @@ function renderFontGallery(fonts, sampleText) {
   });
 }
 
-// Fetch local fonts, dedupe by family, and cache. Returns an array of family metadata.
 async function fetchAndCacheLocalFonts() {
   try {
     const pickedFonts = await queryLocalFonts();
@@ -63,10 +55,6 @@ async function fetchAndCacheLocalFonts() {
     throw err;
   }
 }
-
-// Check whether a font family supports the requested weight using the FontFaceSet.check API.
-// The app displays the fonts returned by the Font Access API; additional
-// filtering or heuristics are intentionally omitted.
 
 function setStatus(text, isError = false) {
   const status = document.getElementById('status');
@@ -82,13 +70,6 @@ function setStatus(text, isError = false) {
   }
 }
 
-// Note: we intentionally do not call any programmatic permission.request().
-// The code will only proceed when the Permissions API reports 'granted', or
-// when the Permissions API is absent (in which case we attempt queryLocalFonts()
-// directly). This avoids triggering permission prompts programmatically; if the
-// browser wants to prompt the user it will do so for the appropriate API call.
-
-// High-level flow: only prompt if permission state is not already 'granted'. If granted, fetch and render immediately.
 async function requestFontsAndRender() {
   const sampleText = document.getElementById('sample-input')?.value || '';
   const gallery = document.getElementById('font-gallery');
@@ -143,7 +124,6 @@ async function requestFontsAndRender() {
   setStatus(`Received ${pickedFonts.length} font entries from API. Preparing CSS...`);
 
   const rules = [];
-  const aliasMap = new Map();
   for (const font of pickedFonts) {
     const full = font.fullName || '';
     const post = font.postscriptName || '';
@@ -184,26 +164,19 @@ if (navigator.permissions && 'query' in navigator.permissions) {
     navigator.permissions.query({ name: 'local-fonts' }).then((status) => {
       if (status && typeof status.addEventListener === 'function') {
         status.addEventListener('change', async () => {
-          if (status.state === 'granted') {
-            // Refresh fonts when permission becomes granted
-            await requestFontsAndRender();
-          }
+          if (status.state === 'granted') await requestFontsAndRender();
         });
       }
-    }).catch(() => {
-      // ignore
-    });
-  } catch (err) {
-    // ignore
-  }
+    }).catch(() => {});
+  } catch (err) {}
 }
 
-if (window.__localFontsCache && document.getElementById('font-gallery')) {
-  renderFontGallery(window.__localFontsCache, document.getElementById('sample-input')?.value || '');
+if (window.__localFontsCache && $('font-gallery')) {
+  renderFontGallery(window.__localFontsCache, sampleInput?.value || '');
   setPermissionNote('', false);
 }
 function setPermissionNote(text, visible = true, color = '') {
-  const note = document.getElementById('permission-note');
+  const note = $('permission-note');
   if (!note) return;
   note.textContent = text;
   note.style.display = visible ? '' : 'none';
@@ -212,7 +185,7 @@ function setPermissionNote(text, visible = true, color = '') {
 
 async function initPermissionUI() {
   if (navigator.permissions && 'query' in navigator.permissions) {
-      try {
+    try {
       if (!(typeof window.queryLocalFonts === 'function')) {
         setPermissionNote(NOT_AVAILABLE_MSG, true, 'brown');
         return;
@@ -223,7 +196,7 @@ async function initPermissionUI() {
         requestFontsAndRender();
       } else {
         setPermissionNote('Permission to access local fonts is not granted. If your browser prompts for access, follow its UI to allow it.', true);
-        const galleryEl = document.getElementById('font-gallery');
+        const galleryEl = $('font-gallery');
         if (galleryEl) galleryEl.innerHTML = '';
       }
     } catch (err) {
@@ -237,5 +210,4 @@ async function initPermissionUI() {
   }
 }
 
-// Initialize permission-related UI on load
 initPermissionUI().catch(() => {});
