@@ -1,0 +1,83 @@
+/* Theme variables */
+:root{
+  --bg: #ffffff;
+  --fg: #111111;
+  --muted: #6b7280; /* GrayText approximate */
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb; /* light gray */
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+  --accent: #373fff;
+  --link: #0066cc;
+  --code-color: #ff0000;
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg: #000000;
+    --fg: #ffffff;
+    --muted: #9ca3af;
+    --card-bg: #0b0b0b;
+    --card-border: #222222;
+    --input-bg: #0b0b0b;
+    --input-border: #333333;
+    --accent: #9aa8ff;
+    --link: #58a6ff;
+    --code-color: #ff6b6b;
+  }
+}
+
+html{display:flex;justify-content:center}
+body{
+  font-family:system-ui;
+  margin:2em;
+  max-width:60ch;
+  background:var(--bg);
+  color:var(--fg);
+}
+
+h1{color:var(--accent)}
+h2{color:var(--muted)}
+
+font-select{display:block;--input-height:1.3125em;height:var(--input-height)}
+
+.preview{padding:0.25rem;border:solid 1px var(--card-border);margin-block:1em}
+
+#font-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.5rem;margin-top:1rem}
+
+.font-sample{border:1px solid var(--card-border);padding:0.5rem;border-radius:4px;background:var(--card-bg)}
+
+.font-name{font-size:0.85rem;color:var(--muted);margin-bottom:0.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.font-sample-text{font-size:1rem;line-height:1.2}
+
+code{color:var(--code-color);font-family:ui-monospace,monospace}
+
+a{color:var(--link)}
+
+#sample-input{width:100%;padding:0.5rem;font-size:1rem;font-family:system-ui;border:1px solid var(--input-border);border-radius:4px;background:var(--input-bg);color:var(--fg)}
+
+#controls{display:flex;flex-direction:column;gap:0.5rem;align-items:stretch;margin-top:0.5rem}
+.controls-row{display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap}
+.control-group{display:flex;flex-direction:column}
+
+#controls label{font-size:0.9rem;color:var(--muted)}
+
+#controls input[type="number"],#controls select{padding:0.25rem 0.5rem;border:1px solid var(--input-border);border-radius:4px;background:var(--input-bg);color:var(--fg);max-width:10ch}
+
+/* Make the weight dropdown wide enough to show "400 (normal)" */
+#sample-weight{min-width:16ch;max-width:none}
+
+#controls label[for="limit-weight"]{display:flex;align-items:center;gap:0.25rem}
+
+#request-fonts{align-self:start;padding:0.4rem 0.6rem;border-radius:4px;background:var(--accent);color:#fff;border:none;cursor:pointer}
+#request-fonts:active{transform:translateY(1px)}
+
+#status{font-size:0.9rem;margin-left:0}
+
+.permission-note{font-size:0.95rem;color:var(--muted);background:rgba(128,128,128,0.03);padding:0.5rem;border-radius:4px;border:1px solid rgba(128,128,128,0.08)}
+
+.help-link{margin-top:0.25rem;font-size:0.85rem;color:var(--muted)}
+.help-link a{color:inherit;text-decoration:underline dotted}
+
+footer a{color:brown}
