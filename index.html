@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Font Preview</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Font Preview</h1>
+      <textarea id="t" rows="3">The quick brown fox jumps over the lazy dog. 0123456789</textarea>
+      <div class="bar">
+        <label>Size <input id="sz" type="number" value="32" min="8" max="160" /></label>
+        <label>Filter <input id="flt" type="text" placeholder="filter" /></label>
+        <button id="cpy" type="button">Copy</button>
+        <button id="th" type="button" aria-pressed="false">Dark</button>
+      </div>
+      <div id="st" role="status" aria-live="polite">Detecting…</div>
+    </header>
+    <main>
+      <section id="out" aria-label="Fonts">
+        <div id="loading">Detecting…</div>
+      </section>
+    </main>
+    <template id="tpl">
+      <article class="f">
+        <h2></h2>
+        <div class="s"></div>
+      </article>
+    </template>
+  <script src="fonts-list.mjs" type="module"></script>
+  <script src="app.mjs" type="module"></script>
+  </body>
+</html>
