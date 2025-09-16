@@ -100,7 +100,7 @@ async function requestFontsAndRender() {
   }
 
   if (!canAccess) {
-    setStatus('Permission to access local fonts denied or unavailable. You can try again below.', true);
+    setStatus('Permission to access local fonts denied or unavailable.', true);
     const galleryEl = document.getElementById('font-gallery');
     if (galleryEl) galleryEl.innerHTML = '';
     return;
