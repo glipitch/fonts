@@ -142,7 +142,7 @@ async function requestFontsAndRender() {
     rules.push(`@font-face { font-family: '${alias}'; src: ${src}; font-weight: ${weightVal}; font-style: ${styleVal}; font-display: block; }`);
     try {
       font.__localFamily = alias;
-    } catch (e) {}
+    } catch (e) { }
   }
 
   try {
@@ -167,8 +167,8 @@ if (navigator.permissions && 'query' in navigator.permissions) {
           if (status.state === 'granted') await requestFontsAndRender();
         });
       }
-    }).catch(() => {});
-  } catch (err) {}
+    }).catch(() => { });
+  } catch (err) { }
 }
 
 if (window.__localFontsCache && $('font-gallery')) {
@@ -206,11 +206,11 @@ async function initPermissionUI() {
     setPermissionNote('', false);
     try {
       requestFontsAndRender();
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 
-initPermissionUI().catch(() => {});
+initPermissionUI().catch(() => { });
 
 // Attempt to trigger the browser permission prompt on the first user gesture
 // (no additional UI). Some browsers require a user gesture for permission
