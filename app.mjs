@@ -57,17 +57,22 @@ function hasFont(name) {
 }
 
 async function apiFonts() {
-  try {
-    if (navigator.fonts?.query) {
-      const q = await navigator.fonts.query();
-      const set = new Set();
-      for await (const f of q) {
-        const n = f.fullName || f.postscriptName || f.family;
-        if (n) set.add(n);
+  if ('queryLocalFonts' in window) {
+    try {
+      const status = await navigator.permissions.query({ name: 'local-fonts' });
+      if (status.state === 'granted') {
+        const fonts = await window.queryLocalFonts();
+        const set = new Set();
+        for (const f of fonts) {
+          const n = f.fullName || f.postscriptName || f.family;
+          if (n) set.add(n);
+        }
+        return [...set].sort((a, b) => a.localeCompare(b));
       }
-      return [...set].sort((a, b) => a.localeCompare(b));
+    } catch (err) {
+      console.warn('Local Font Access API failed:', err);
     }
-  } catch { /* ignore */ }
+  }
   return null;
 }
 
