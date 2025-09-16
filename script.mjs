@@ -1,6 +1,7 @@
 const sampleInput = document.getElementById('sample-input');
 const sizeInput = document.getElementById('sample-size');
 const weightSelect = document.getElementById('sample-weight');
+const filterInput = document.getElementById('filter-input');
 const $ = (id) => document.getElementById(id);
 const NOT_AVAILABLE_MSG = "The Font Access API (queryLocalFonts) is not available in your browser.\nIf your browser supports the API, check site permissions.";
 if (sampleInput) {
@@ -19,15 +20,22 @@ if (sampleInput) {
   };
   sizeInput?.addEventListener('input', updateFromControls);
   weightSelect?.addEventListener('change', updateFromControls);
+  filterInput?.addEventListener('input', updateFromControls);
 }
 
 function renderFontGallery(fonts, sampleText) {
   const gallery = $('font-gallery');
   if (!gallery) return;
   gallery.innerHTML = '';
+  const filter = (filterInput?.value || '').trim().toLowerCase();
   const size = parseInt(sizeInput?.value || '24', 10);
   const weight = weightSelect?.value || '400';
+  let renderedCount = 0;
   fonts.forEach((metadata) => {
+    if (filter) {
+      const name = (metadata.fullName || metadata.family || metadata.postscriptName || '').toLowerCase();
+      if (!name.includes(filter)) return;
+    }
     const container = document.createElement('div');
     container.className = 'font-sample';
     const title = document.createElement('div');
@@ -42,7 +50,11 @@ function renderFontGallery(fonts, sampleText) {
     container.appendChild(title);
     container.appendChild(sample);
     gallery.appendChild(container);
+    renderedCount++;
   });
+
+  // Display only the number of visible fonts (after any filtering)
+  setStatus(String(renderedCount));
 }
 
 async function fetchAndCacheLocalFonts() {
@@ -156,7 +168,6 @@ async function requestFontsAndRender() {
   }
 
   renderFontGallery(pickedFonts, sampleText);
-  setStatus(`Rendered ${pickedFonts.length} font entries.`);
 }
 
 if (navigator.permissions && 'query' in navigator.permissions) {
