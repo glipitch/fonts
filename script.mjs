@@ -1,6 +1,8 @@
 const sampleInput = document.getElementById('sample-input');
 const sizeInput = document.getElementById('sample-size');
 const weightSelect = document.getElementById('sample-weight');
+// Shared user-facing message used in multiple places below
+const NOT_AVAILABLE_MSG = 'The Font Access API (queryLocalFonts) is not available in your browser.';
 if (sampleInput) {
   const setPreviewText = (text) => {
     const gallery = document.getElementById('font-gallery');
@@ -93,7 +95,7 @@ async function requestFontsAndRender() {
   if (!gallery) return;
   if (!(typeof window.queryLocalFonts === 'function')) {
     setStatus('Font Access API is not available in this browser.', true);
-    setPermissionNote('The Font Access API (queryLocalFonts) is not available in your browser.', true, 'brown');
+    setPermissionNote(NOT_AVAILABLE_MSG, true, 'brown');
     gallery.innerHTML = '';
     return;
   }
@@ -183,19 +185,6 @@ if (navigator.permissions && 'query' in navigator.permissions) {
       if (status && typeof status.addEventListener === 'function') {
         status.addEventListener('change', async () => {
           if (status.state === 'granted') {
-            await requestFontsAndRender();
-          }
-        });
-      }
-    }).catch(() => {});
-  } catch (err) {}
-}
-if (navigator.permissions && 'query' in navigator.permissions) {
-  try {
-    navigator.permissions.query({ name: 'local-fonts' }).then((status) => {
-      if (status && typeof status.addEventListener === 'function') {
-        status.addEventListener('change', async () => {
-          if (status.state === 'granted') {
             // Refresh fonts when permission becomes granted
             await requestFontsAndRender();
           }
@@ -223,9 +212,9 @@ function setPermissionNote(text, visible = true, color = '') {
 
 async function initPermissionUI() {
   if (navigator.permissions && 'query' in navigator.permissions) {
-    try {
+      try {
       if (!(typeof window.queryLocalFonts === 'function')) {
-        setPermissionNote('The Font Access API (queryLocalFonts) is not available in your browser.', true, 'brown');
+        setPermissionNote(NOT_AVAILABLE_MSG, true, 'brown');
         return;
       }
       const status = await navigator.permissions.query({ name: 'local-fonts' });
