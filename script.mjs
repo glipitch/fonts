@@ -2,7 +2,7 @@ const sampleInput = document.getElementById('sample-input');
 const sizeInput = document.getElementById('sample-size');
 const weightSelect = document.getElementById('sample-weight');
 const $ = (id) => document.getElementById(id);
-const NOT_AVAILABLE_MSG = "The Font Access API (queryLocalFonts) is not available in your browser.\nIf you're on a secure site, check the site permissions via the padlock icon (left of the address bar) to allow local font access.";
+const NOT_AVAILABLE_MSG = "The Font Access API (queryLocalFonts) is not available in your browser.\nIf your browser supports the API, check site permissions.";
 if (sampleInput) {
   const setPreviewText = (text) => {
     const gallery = $('font-gallery');
