@@ -211,3 +211,44 @@ async function initPermissionUI() {
 }
 
 initPermissionUI().catch(() => {});
+
+// Attempt to trigger the browser permission prompt on the first user gesture
+// (no additional UI). Some browsers require a user gesture for permission
+// prompts; listening for a one-time pointer/keyboard/touch event and calling
+// queryLocalFonts() from that handler will cause the browser to show the
+// permission chooser on deploys like GitHub Pages.
+let __localFontsUserGestureAttached = false;
+async function attemptUserGestureQuery() {
+  if (!(typeof window.queryLocalFonts === 'function')) return;
+  if (window.__localFontsCache) return;
+  try {
+    setStatus('Requesting permission to access local fonts (user gesture)...');
+    const fonts = await queryLocalFonts();
+    window.__localFontsCache = fonts;
+    setPermissionNote('', false);
+    await requestFontsAndRender();
+  } catch (err) {
+    // If the call fails (user denied or API blocked), keep the existing
+    // permission note/status. Don't surface an extra UI element.
+    console.warn('User-gesture queryLocalFonts failed:', err);
+  }
+}
+
+function addUserGestureListeners() {
+  if (__localFontsUserGestureAttached) return;
+  __localFontsUserGestureAttached = true;
+  const handler = () => {
+    // call but don't await here; handler options use { once: true }
+    attemptUserGestureQuery();
+  };
+  // Use once:true so listeners remove themselves after firing.
+  document.addEventListener('pointerdown', handler, { once: true, passive: true });
+  document.addEventListener('keydown', handler, { once: true, passive: true });
+  document.addEventListener('touchstart', handler, { once: true, passive: true });
+}
+
+// If the API exists and we don't already have cached fonts, attach a one-time
+// user-gesture listener so the first user interaction will prompt for access.
+if (typeof window !== 'undefined' && typeof window.queryLocalFonts === 'function' && !window.__localFontsCache) {
+  addUserGestureListeners();
+}
